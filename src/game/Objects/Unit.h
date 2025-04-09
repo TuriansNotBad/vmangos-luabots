@@ -188,20 +188,6 @@ enum AttackPowerModIndex
 
 uint32 CreateProcExtendMask(SpellNonMeleeDamage* damageInfo, SpellMissInfo missCondition);
 
-enum SpellProcEventTriggerCheck
-{
-    SPELL_PROC_TRIGGER_FAILED       = 0,
-    SPELL_PROC_TRIGGER_ROLL_FAILED  = 1,
-    SPELL_PROC_TRIGGER_OK           = 2,
-};
-
-enum SpellAuraProcResult
-{
-    SPELL_AURA_PROC_OK              = 0,                    // proc was processed, will remove charges
-    SPELL_AURA_PROC_FAILED          = 1,                    // proc failed - if at least one aura failed the proc, charges won't be taken
-    SPELL_AURA_PROC_CANT_TRIGGER    = 2                     // aura can't trigger - skip charges taking, move to next aura if exists
-};
-
 typedef SpellAuraProcResult(Unit::*pAuraProcHandler)(Unit* pVictim, uint32 amount, uint32 originalAmount, Aura* triggeredByAura, SpellEntry const* procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown);
 extern pAuraProcHandler AuraProcHandler[TOTAL_AURAS];
 
@@ -367,7 +353,7 @@ class Unit : public SpellCaster
         typedef std::set<uint32> ComboPointHolderSet;
         typedef std::map<SpellEntry const*, ObjectGuid> SingleCastSpellTargetMap;
 
-        virtual ~Unit () override;
+        virtual ~Unit() override;
 
         void AddToWorld() override;
         void RemoveFromWorld() override;
@@ -406,7 +392,7 @@ class Unit : public SpellCaster
     public:
         // Data
         float m_modSpellHitChance;
-        int32 m_baseSpellCritChance;
+        float m_modSpellCritChance[MAX_SPELL_SCHOOL];
         float m_threatModifier[MAX_SPELL_SCHOOL];
         float m_modAttackSpeedPct[3];
         float m_modRecalcDamagePct[3];
@@ -469,6 +455,11 @@ class Unit : public SpellCaster
         float GetUnitParryChance() const;
         float GetUnitBlockChance() const;
         float GetUnitCriticalChance(WeaponAttackType attackType, Unit const* pVictim) const;
+        float GetSpellCritFromIntellect() const;
+        float GetSpellCritPercent(SpellSchools school) const { return m_modSpellCritChance[school]; }
+        void SetSpellCritPercent(SpellSchools school, float percent) { m_modSpellCritChance[school] = percent; }
+        void UpdateAllSpellCritChances();
+        void UpdateSpellCritChance(uint32 school);
 
         virtual uint32 GetShieldBlockValue() const = 0;
         float GetPPMProcChance(uint32 WeaponSpeed, float PPM) const;
@@ -537,7 +528,7 @@ class Unit : public SpellCaster
         ReactStates GetReactState() const;
         bool HasReactState(ReactStates state) const;
         void UpdateControl();
-        bool CanFreeMove() const { return !HasUnitState(UNIT_STAT_NO_FREE_MOVE) && !GetOwnerGuid(); }
+        bool CanFreeMove() const { return !HasUnitState(UNIT_STATE_NO_FREE_MOVE) && !GetOwnerGuid(); }
         uint32 GetCreatureType() const;
         uint32 GetCreatureTypeMask() const
         {
@@ -613,7 +604,7 @@ class Unit : public SpellCaster
                 UNIT_NPC_FLAG_SPIRITGUIDE | UNIT_NPC_FLAG_TABARDDESIGNER | UNIT_NPC_FLAG_AUCTIONEER);
         }
         bool IsSpiritService() const { return HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPIRITHEALER | UNIT_NPC_FLAG_SPIRITGUIDE); }
-        bool IsTaxiFlying() const { return HasUnitState(UNIT_STAT_TAXI_FLIGHT); }
+        bool IsTaxiFlying() const { return HasUnitState(UNIT_STATE_TAXI_FLIGHT); }
 
         bool IsCaster() const;
         CreatureAI* AI() const;
@@ -631,13 +622,13 @@ class Unit : public SpellCaster
         /*********************************************************/
 
     private:
-        UnitVisibility m_Visibility;
-        Position m_last_notified_position;
+        UnitVisibility m_visibility;
+        Position m_lastNotifiedPosition;
     public:
         uint32 m_detectInvisibilityMask;
         uint32 m_invisibilityMask;
         virtual bool CanBeDetected() const { return true; }
-        UnitVisibility GetVisibility() const { return m_Visibility; }
+        UnitVisibility GetVisibility() const { return m_visibility; }
         void SetVisibility(UnitVisibility x);
         void UpdateVisibilityAndView() override;
 
@@ -796,7 +787,7 @@ class Unit : public SpellCaster
         ObjectGuid m_ObjectSlotGuid[4];
 
         uint32 m_lastSanctuaryTime; // Used by SPELL_EFFECT_SANCTUARY.
-        bool m_AutoRepeatFirstCast; // auto shoot and wand
+        bool m_autoRepeatFirstCast; // auto shoot and wand
 
         SingleCastSpellTargetMap      & GetSingleCastSpellTargets() { return m_singleCastSpellTargets; }
         SingleCastSpellTargetMap const& GetSingleCastSpellTargets() const { return m_singleCastSpellTargets; }
@@ -848,7 +839,7 @@ class Unit : public SpellCaster
         bool IsImmuneToMechanic(Mechanics mechanic) const;
         bool IsFrozen() const { return HasAuraState(AURA_STATE_FROZEN); }
         bool IsFeigningDeath() const { return ((HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD) || IsFeigningDeathSuccessfully()) && IsAlive()); }
-        bool IsFeigningDeathSuccessfully() const { return HasUnitState(UNIT_STAT_FEIGN_DEATH); }
+        bool IsFeigningDeathSuccessfully() const { return HasUnitState(UNIT_STATE_FEIGN_DEATH); }
 
         bool HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel = nullptr) const;
         bool HasBreakableByDamageAuraType(AuraType type, uint32 excludeAura) const;
@@ -937,8 +928,8 @@ class Unit : public SpellCaster
         bool m_doExtraAttacks;
         float m_meleeZLimit;
         float m_meleeZReach;
-        ThreatManager m_ThreatManager; // Manage all Units threatening us
-        HostileRefManager m_HostileRefManager; // Manage all Units that are threatened by us (has list of creatures that have us in their threat list)
+        ThreatManager m_threatManager; // Manage all Units threatening us
+        HostileRefManager m_hostileRefManager; // Manage all Units that are threatened by us (has list of creatures that have us in their threat list)
         std::vector<ObjectGuid> m_tauntGuids;
     protected:
         uint32 m_attackTimer[MAX_ATTACK];
@@ -1135,13 +1126,13 @@ class Unit : public SpellCaster
         void RemoveAttackersThreat(Unit* owner);
         void DoResetThreat();
         void DeleteThreatList();
-        ThreatManager& GetThreatManager() { return m_ThreatManager; }
-        ThreatManager const& GetThreatManager() const { return m_ThreatManager; }
+        ThreatManager& GetThreatManager() { return m_threatManager; }
+        ThreatManager const& GetThreatManager() const { return m_threatManager; }
 
-        void AddHatedBy(HostileReference* pHostileReference) { m_HostileRefManager.insertFirst(pHostileReference); };
+        void AddHatedBy(HostileReference* pHostileReference) { m_hostileRefManager.insertFirst(pHostileReference); };
         void RemoveHatedBy(HostileReference* /*pHostileReference*/) { /* nothing to do yet */ }
-        HostileRefManager& GetHostileRefManager() { return m_HostileRefManager; }
-        HostileRefManager const& GetHostileRefManager() const { return m_HostileRefManager; }
+        HostileRefManager& GetHostileRefManager() { return m_hostileRefManager; }
+        HostileRefManager const& GetHostileRefManager() const { return m_hostileRefManager; }
 
         // Script Helpers
         uint8 GetEnemyCountInRadiusAround(Unit const* pTarget, float radius) const;
@@ -1193,9 +1184,9 @@ class Unit : public SpellCaster
     private:
         Unit* _GetTotem(TotemSlot slot) const;              // for templated function without include need
         Pet* _GetPet(ObjectGuid guid) const;                // for templated function without include need
-        FollowerRefManager m_FollowingRefManager;
+        FollowerRefManager m_followingRefManager;
         GuardianPetList m_guardianPets;
-        ObjectGuid m_TotemSlot[MAX_TOTEM_SLOT];
+        ObjectGuid m_totemSlot[MAX_TOTEM_SLOT];
     protected:
         CharmInfo* m_charmInfo;
         ObjectGuid m_possessorGuid; // Guid of unit possessing this one
@@ -1259,7 +1250,7 @@ class Unit : public SpellCaster
         uint32 GetGuardianCountWithEntry(uint32 entry);
         uint32 GetGuardiansCount() const;
 
-        ObjectGuid const& GetTotemGuid(TotemSlot slot) const { return m_TotemSlot[slot]; }
+        ObjectGuid const& GetTotemGuid(TotemSlot slot) const { return m_totemSlot[slot]; }
         Totem* GetTotem(TotemSlot slot) const;
         bool IsAllTotemSlotsUsed() const;
         void _AddTotem(TotemSlot slot, Totem* totem);       // only for call from Totem summon code
@@ -1299,6 +1290,7 @@ class Unit : public SpellCaster
         void SetCharm(Unit* pet);
         void Uncharm();
         void RemoveCharmAuras(AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
+        void RemoveSummonPossessedAuras(AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
         ObjectGuid const& GetCharmGuid() const { return GetGuidValue(UNIT_FIELD_CHARM); }
         void SetCharmGuid(ObjectGuid charm) { SetGuidValue(UNIT_FIELD_CHARM, charm); }
 
@@ -1314,7 +1306,7 @@ class Unit : public SpellCaster
         template<typename Func>
         bool CheckAllControlledUnits(Func const& func, uint32 controlledMask) const;
 
-        void AddFollower(FollowerReference* pRef) { m_FollowingRefManager.insertFirst(pRef); }
+        void AddFollower(FollowerReference* pRef) { m_followingRefManager.insertFirst(pRef); }
         void RemoveFollower(FollowerReference* /*pRef*/) { /* nothing to do yet */ }
 
         /*********************************************************/
@@ -1328,11 +1320,11 @@ class Unit : public SpellCaster
         std::map<MovementChangeType, uint32> m_lastMovementChangeCounterPerType;
         bool m_hasPendingSplineDone = false;
         float m_casterChaseDistance;
-        float m_speed_rate[MAX_MOVE_TYPE];
+        float m_speedRates[MAX_MOVE_TYPE];
         float m_jumpInitialSpeed = 0;
         void UpdateSplineMovement(uint32 t_diff);
     protected:
-        MotionMaster i_motionMaster;
+        MotionMaster m_motionMaster;
     public:
         void SendHeartBeat(bool includingSelf = true);
         void SendMovementPacket(uint16 opcode, bool includingSelf = true);
@@ -1341,7 +1333,7 @@ class Unit : public SpellCaster
         void SetRooted(bool apply);
         void SetRootedReal(bool apply);
         bool IsRooted() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_ROOT); }
-        bool ShouldBeRooted() const { return GetDeathState() == CORPSE || HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_ROOT); }
+        bool ShouldBeRooted() const { return GetDeathState() == CORPSE || HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_ROOT); }
 
         void SetWaterWalking(bool apply);
         void SetWaterWalkingReal(bool apply);
@@ -1356,7 +1348,6 @@ class Unit : public SpellCaster
         bool IsFallingSlow() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_SAFE_FALL); }
 
         void SetLevitate(bool apply);
-        bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_LEVITATING); }
 
         void KnockBackFrom(WorldObject const* target, float horizontalSpeed, float verticalSpeed);
         void KnockBack(float angle, float horizontalSpeed, float verticalSpeed);
@@ -1394,7 +1385,7 @@ class Unit : public SpellCaster
         float GetSpeed(UnitMoveType mtype) const;
         float GetXZFlagBasedSpeed() const;
         float GetXZFlagBasedSpeed(uint32 moveFlags) const;
-        float GetSpeedRate(UnitMoveType mtype) const { return m_speed_rate[mtype]; }
+        float GetSpeedRate(UnitMoveType mtype) const { return m_speedRates[mtype]; }
         void PropagateSpeedChange() { GetMotionMaster()->PropagateSpeedChange(); }
         float GetSpeedForMovementInfo(MovementInfo const& movementInfo) const;
         bool ExtrapolateMovement(MovementInfo const& mi, uint32 diffMs, float &x, float &y, float &z, float &o) const;
@@ -1423,8 +1414,8 @@ class Unit : public SpellCaster
         bool IsBehindTarget(Unit const* pTarget, bool strict = true) const;
         bool CantPathToVictim() const;
 
-        MotionMaster* GetMotionMaster() { return &i_motionMaster; }
-        MotionMaster const* GetMotionMaster() const { return &i_motionMaster; }
+        MotionMaster* GetMotionMaster() { return &m_motionMaster; }
+        MotionMaster const* GetMotionMaster() const { return &m_motionMaster; }
         void RestoreMovement();
 
         template <class T>
@@ -1437,7 +1428,7 @@ class Unit : public SpellCaster
 
         void MonsterMove(float x, float y, float z);
         void MonsterMoveWithSpeed(float x, float y, float z, float o, float speed, uint32 options);
-        bool IsStopped() const { return !(HasUnitState(UNIT_STAT_MOVING)); }
+        bool IsStopped() const { return !(HasUnitState(UNIT_STATE_MOVING)); }
         void StopMoving(bool force = false);
         void DisableSpline();
 

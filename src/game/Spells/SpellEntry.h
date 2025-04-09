@@ -33,6 +33,7 @@ class Unit;
 class WorldObject;
 class SpellEntry;
 class SpellCaster;
+struct AuraScript;
 
 namespace Spells
 {
@@ -647,6 +648,7 @@ class SpellEntry
         uint32 MinTargetLevel = 0;                                 // 162
         uint32 Custom = 0;                                         // 176
         uint32 Internal = 0;                                       // Assigned by the core.
+        uint32 ScriptId = 0;
 
         // HELPERS:
         DiminishingGroup GetDiminishingReturnsGroup(bool triggered) const;
@@ -1167,7 +1169,7 @@ class SpellEntry
 
         int32 GetDuration() const;
         int32 GetMaxDuration() const;
-        int32 CalculateDuration(WorldObject const* caster = nullptr) const;
+        int32 CalculateDuration(WorldObject const* caster = nullptr, Unit const* target = nullptr, AuraScript* auraScript = nullptr) const;
         uint32 GetCastTime(SpellCaster const* caster, Spell* spell = nullptr) const;
         uint32 GetCastTimeForBonus(DamageEffectType damagetype) const;
         uint16 GetAuraMaxTicks() const;

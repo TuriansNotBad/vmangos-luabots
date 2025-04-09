@@ -41,17 +41,17 @@ bool GossipHello_npc_screecher_spirit(Player* pPlayer, Creature* pCreature)
 
 enum
 {
-    SAY_ESCORT_START                    = -1001106,
-    SAY_WANDER_1                        = -1001107,
-    SAY_WANDER_2                        = -1001108,
-    SAY_WANDER_3                        = -1001109,
-    SAY_WANDER_4                        = -1001110,
-    SAY_WANDER_DONE_1                   = -1001111,
-    SAY_WANDER_DONE_2                   = -1001112,
-    SAY_WANDER_DONE_3                   = -1001113,
-    EMOTE_WANDER                        = -1001114,
-    SAY_EVENT_COMPLETE_1                = -1001115,
-    SAY_EVENT_COMPLETE_2                = -1001116,
+    SAY_ESCORT_START                    = 3921,
+    SAY_WANDER_1                        = 3912,
+    SAY_WANDER_2                        = 3907,
+    SAY_WANDER_3                        = 3909,
+    SAY_WANDER_4                        = 3911,
+    SAY_WANDER_DONE_1                   = 3914,
+    SAY_WANDER_DONE_2                   = 3913,
+    SAY_WANDER_DONE_3                   = 3916,
+    EMOTE_WANDER                        = 3918,
+    SAY_EVENT_COMPLETE_1                = 3917,
+    SAY_EVENT_COMPLETE_2                = 3922,
 
     SPELL_SHAYS_BELL                    = 11402,
     NPC_ROCKBITER                       = 7765,
@@ -221,7 +221,7 @@ bool QuestAccept_npc_shay_leafrunner(Player* pPlayer, Creature* pCreature, Quest
         DoScriptText(SAY_ESCORT_START, pCreature);
         pCreature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
         if (npc_shay_leafrunnerAI* leafrunnerAI = dynamic_cast<npc_shay_leafrunnerAI*>(pCreature->AI()))
-            leafrunnerAI->BeforeStartFollow(pPlayer, pPlayer->GetFactionTemplateId(), pQuest);
+            leafrunnerAI->BeforeStartFollow(pPlayer, FACTION_ESCORT_A_NEUTRAL_PASSIVE, pQuest);
     }
     return true;
 }

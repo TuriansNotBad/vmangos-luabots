@@ -67,8 +67,7 @@ cd winbuild
 call nmake /f Makefile.vc mode=dll MACHINE=x64 || (color 4 & echo Error detected & pause & exit /b)
 
 cd ..\..
-::xcopy /y "curl-build\builds\libcurl-vc-x64-release-static-ipv6-sspi-schannel\lib\libcurl_a.lib" "lib\" || (color 4 & echo Error detected & pause & exit /b)
-::xcopy /e /i /y "curl-build\builds\libcurl-vc-x64-release-static-ipv6-sspi-schannel\include" "include" || (color 4 & echo Error detected & pause & exit /b)
+xcopy /y "curl-build\builds\libcurl-vc-x64-release-dll-ipv6-sspi-schannel\bin\libcurl.dll" "lib\" || (color 4 & echo Error detected & pause & exit /b)
 xcopy /y "curl-build\builds\libcurl-vc-x64-release-dll-ipv6-sspi-schannel\lib\libcurl.lib" "lib\" || (color 4 & echo Error detected & pause & exit /b)
 xcopy /e /i /y "curl-build\builds\libcurl-vc-x64-release-dll-ipv6-sspi-schannel\include" "include" || (color 4 & echo Error detected & pause & exit /b)
 

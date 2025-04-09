@@ -84,6 +84,29 @@ static constexpr struct ClientOffsets
     // Click to move
     uint32 ClickToMovePosition;
 } Offsets[] = {
+    // scanning does not work in versions before 1.8 so no point in defining offsets for them
+    {
+        4878,
+        0x2DB9D0,
+        0x21F580, 0x220610, 0x220280, 0x22B7D0,
+        0x226E0,
+        0xBEC94C,
+        0xC60AD0,
+        0xB804E0, 0x3890, 0x0, 0xA8,
+        0xC598DC, 0x228, 0x08,
+        0xBBEFC8
+    },
+    {
+        5086,
+        0x2E82E0,
+        0x225FB0, 0x227070, 0x226CE0, 0x232170,
+        0x22580,
+        0xC01BBC,
+        0xC74844,
+        0xB95818, 0x38A0, 0x0, 0xA8,
+        0xC6EBF4, 0x228, 0x08,
+        0xBD4260
+    },
     {
         5302,
         0x2F5CE0,

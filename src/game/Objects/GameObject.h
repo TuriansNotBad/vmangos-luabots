@@ -191,6 +191,8 @@ class GameObject : public SpellCaster
         void AddUse() { ++m_useTimes; }
         uint32 GetUseCount() const { return m_useTimes; }
 
+        void SetCooldownTime(time_t cooldown) { m_cooldownTime = cooldown; }
+
         void SaveRespawnTime() override;
 
         Loot        loot;
@@ -221,7 +223,7 @@ class GameObject : public SpellCaster
 
         // Gestion des GameObjectAI
         void AIM_Initialize();
-        GameObjectAI* AI() { return i_AI; }
+        GameObjectAI* AI() { return m_AI; }
 
         void UpdateCollisionState();
         void UpdateModel();                                 // updates model in case displayId were changed
@@ -282,7 +284,7 @@ class GameObject : public SpellCaster
 
         Position m_stationaryPosition;
 
-        GameObjectAI* i_AI;
+        GameObjectAI* m_AI;
 
         uint32 m_playerGroupId;
     private:

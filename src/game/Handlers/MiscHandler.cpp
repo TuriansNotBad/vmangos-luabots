@@ -723,8 +723,8 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (sScriptMgr.OnAreaTrigger(pPlayer, pTrigger))
-        return;
+    if (pTrigger->script_id || pTrigger->script_name)
+        pPlayer->GetMap()->StartAreaTriggerScript(pTrigger, pPlayer);
 
     uint32 quest_id = sObjectMgr.GetQuestForAreaTrigger(triggerId);
     if (quest_id && pPlayer->IsAlive() && pPlayer->IsActiveQuest(quest_id))
@@ -770,6 +770,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
             if (bg->HandleAreaTrigger(pPlayer, triggerId))
                 return;
     }
+
     if (ZoneScript* pZoneScript = pPlayer->GetZoneScript())
     {
         if (pZoneScript->HandleAreaTrigger(_player, triggerId))
@@ -795,12 +796,12 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         // Special case prior Patch 1.3 to revive your corpse if dead in Molten Core
         if (sWorld.GetWowPatch() <= WOW_PATCH_102)
         {
-            if (corpseMapId == 409 && triggerId == 1466)
+            if (corpseMapId == MAP_MOLTEN_CORE && triggerId == 1466)
             {
                 pPlayer->ResurrectPlayer(0.5f);
                 pPlayer->SpawnCorpseBones();
-                pPlayer->TeleportTo(230, 458.32f, 26.52f, -70.67f, 4.95f); // Blackrock Depths
-                // pPlayer->TeleportTo(409, 1082.04f, -474.596f, -107.762f, 5.02623f); // Molten Core
+                pPlayer->TeleportTo(MAP_BLACKROCK_DEPTHS, 458.32f, 26.52f, -70.67f, 4.95f); // Blackrock Depths
+                // pPlayer->TeleportTo(MAP_MOLTEN_CORE, 1082.04f, -474.596f, -107.762f, 5.02623f); // Molten Core
                 return;
             }
         }

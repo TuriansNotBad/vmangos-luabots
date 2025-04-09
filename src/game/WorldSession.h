@@ -334,7 +334,7 @@ class WorldSession
         // Played time limit
         time_t GetCreateTime() const { return m_createTime; }
         time_t GetConsecutivePlayTime(time_t now) const { return (now - m_createTime) + m_previousPlayTime; }
-        time_t GetPreviousPlayedTime() { return m_previousPlayTime; }
+        time_t GetPreviousPlayedTime() const { return m_previousPlayTime; }
         void SetPreviousPlayedTime(time_t playedTime) { m_previousPlayTime = playedTime; }
         void CheckPlayedTimeLimit(time_t now);
         void SendPlayTimeWarning(PlayTimeFlag flag, int32 timeLeftInSeconds);
@@ -373,11 +373,11 @@ class WorldSession
 
         // Public chat cooldown restriction functionality
         // Intentionally session-based to avoid login/logout hijinks
-        time_t GetLastPubChanMsgTime() { return m_lastPubChannelMsgTime; }
+        time_t GetLastPubChanMsgTime() const { return m_lastPubChannelMsgTime; }
         void SetLastPubChanMsgTime(time_t time) { m_lastPubChannelMsgTime = time; }
 
         // Bot system
-        PlayerBotEntry* GetBot() { return m_bot.get(); }
+        PlayerBotEntry* GetBot() const { return m_bot.get(); }
         void SetBot(std::shared_ptr<PlayerBotEntry> const& b) { m_bot = b; }
 
         // Warden / Anticheat
@@ -489,7 +489,7 @@ class WorldSession
         void LoadTutorialsData();
         void SendTutorialsData();
         void SaveTutorialsData();
-        uint32 GetTutorialInt(uint32 intId)
+        uint32 GetTutorialInt(uint32 intId) const
         {
             ASSERT(intId < ACCOUNT_TUTORIALS_COUNT);
             return m_tutorials[intId];

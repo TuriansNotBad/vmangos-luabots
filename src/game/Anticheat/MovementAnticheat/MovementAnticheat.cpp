@@ -16,7 +16,7 @@
 
 using namespace Geometry;
 
-const char* GetMovementCheatName(CheatType flagId)
+char const* GetMovementCheatName(CheatType flagId)
 {
     switch (flagId)
     {
@@ -737,7 +737,7 @@ uint32 MovementAnticheat::HandleFlagTests(Player* pPlayer, MovementInfo& movemen
     if ((currentMoveFlags & MOVEFLAG_ROOT) &&
         !(GetLastMovementInfo().moveFlags & MOVEFLAG_ROOT) &&
         !me->HasPendingMovementChange(ROOT) &&
-        !me->HasUnitState(UNIT_STAT_ROOT | UNIT_STAT_PENDING_ROOT | UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED | UNIT_STAT_ROOT_ON_LANDING) &&
+        !me->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_PENDING_ROOT | UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED | UNIT_STATE_ROOT_ON_LANDING) &&
         (opcode != CMSG_FORCE_MOVE_ROOT_ACK))
     {
         APPEND_CHEAT(CHEAT_TYPE_SELF_ROOT);
@@ -1185,7 +1185,7 @@ bool MovementAnticheat::CheckForbiddenArea(MovementInfo const& movementInfo) con
 
     switch(me->GetMapId())
     {
-        case 30: // Alterac Valley
+        case MAP_ALTERAC_VALLEY: // Alterac Valley
         {
             if (BattleGround* bg = me->GetBattleGround())
             {
@@ -1200,7 +1200,7 @@ bool MovementAnticheat::CheckForbiddenArea(MovementInfo const& movementInfo) con
             }
             break;
         }
-        case 489: // Warsong Gulch
+        case MAP_WARSONG_GULCH: // Warsong Gulch
         {
             // Only way to get this high is with engineering items malfunction.
             if (!(movementInfo.moveFlags & (MOVEFLAG_FALLINGFAR | MOVEFLAG_JUMPING)) && movementInfo.pos.z > 380.0f)
@@ -1219,7 +1219,7 @@ bool MovementAnticheat::CheckForbiddenArea(MovementInfo const& movementInfo) con
             }
             break;
         }
-        case 529: // Arathi Basin
+        case MAP_ARATHI_BASIN: // Arathi Basin
         {
             if (BattleGround* bg = me->GetBattleGround())
             {

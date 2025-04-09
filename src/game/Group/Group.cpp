@@ -369,8 +369,8 @@ bool Group::AddMember(ObjectGuid guid, char const* name, uint8 joinMethod)
             // Compare group and player bind
             InstanceGroupBind* groupBind = GetBoundInstance(map->GetId());
             InstancePlayerBind* playerBind = player->GetBoundInstance(map->GetId());
-            if (playerBind && groupBind && !player->m_InstanceValid && playerBind->state == groupBind->state && !((DungeonMap*)map)->IsUnloadingBeforeReset())
-                player->m_InstanceValid = true;
+            if (playerBind && groupBind && !player->m_instanceValid && playerBind->state == groupBind->state && !((DungeonMap*)map)->IsUnloadingBeforeReset())
+                player->m_instanceValid = true;
         }
 
         {
@@ -623,7 +623,6 @@ void Group::Disband(bool hideDestroy, ObjectGuid initiator)
         CharacterDatabase.BeginTransaction(m_Id);
         CharacterDatabase.PExecute("DELETE FROM `groups` WHERE `group_id`='%u'", m_Id);
         CharacterDatabase.PExecute("DELETE FROM `group_member` WHERE `group_id`='%u'", m_Id);
-        CharacterDatabase.CommitTransaction();
 
         // transfer instance save to last player in dungeon
         if (remainingPlayer)
@@ -640,6 +639,7 @@ void Group::Disband(bool hideDestroy, ObjectGuid initiator)
             }
         }
 
+        CharacterDatabase.CommitTransaction();
         ResetInstances(INSTANCE_RESET_GROUP_DISBAND, nullptr);
     }
 
@@ -1576,7 +1576,7 @@ bool Group::_addMember(ObjectGuid guid, char const* name, bool isAssistant, uint
         // if the same group invites the player back, cancel the homebind timer
         if (InstanceGroupBind *bind = GetBoundInstance(player->GetMapId()))
             if (bind->state->GetInstanceId() == player->GetInstanceId())
-                player->m_InstanceValid = true;
+                player->m_instanceValid = true;
     }
 
     if (!isBGGroup() && !(player && player->IsSavingDisabled()))
@@ -2273,7 +2273,7 @@ void Group::_homebindIfInstance(Player* player)
             // unless the player is permanently saved to the instance
             InstancePlayerBind *playerBind = player->GetBoundInstance(map->GetId());
             if (!playerBind || !playerBind->perm)
-                player->m_InstanceValid = false;
+                player->m_instanceValid = false;
         }
     }
 }

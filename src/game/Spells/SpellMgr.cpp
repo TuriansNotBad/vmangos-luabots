@@ -27,6 +27,7 @@
 #include "World.h"
 #include "Chat.h"
 #include "Spell.h"
+#include "ScriptMgr.h"
 #include "BattleGroundMgr.h"
 #include "MapManager.h"
 #include "Unit.h"
@@ -496,7 +497,7 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellPr
         // Exist req for PROC_EX_NO_PERIODIC
         if ((procEvent_procEx & PROC_EX_NO_PERIODIC) &&
             ((procFlags & (PROC_FLAG_DEAL_HARMFUL_PERIODIC | PROC_FLAG_TAKE_HARMFUL_PERIODIC))
-            || 
+            ||
             (procSpell && procSpell->IsSpellAppliesPeriodicAura())))
             return false;
         // Check Extra Requirement like (hit/crit/miss/resist/parry/dodge/block/immune/reflect/absorb and other)
@@ -942,11 +943,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if ((spellInfo_1->Id == 21992 && spellInfo_2->Id == 27648) ||
                             (spellInfo_2->Id == 21992 && spellInfo_1->Id == 27648))
                         return false;
-                    
+
                     // Atiesh aura stacking with Moonkin Aura
                     if (spellInfo_1->SpellIconID == 46 && spellInfo_2->SpellIconID == 46)
                         return false;
-                    
+
                     // Soulstone Resurrection and Twisting Nether (resurrector)
                     if (spellInfo_1->SpellIconID == 92 && spellInfo_2->SpellIconID == 92 && (
                                 (spellInfo_1->SpellVisual == 99 && spellInfo_2->SpellVisual == 0) ||
@@ -1183,6 +1184,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 // Serpent Sting & (Immolation/Explosive Trap Effect)
                 if (((spellInfo_1->SpellFamilyFlags & UI64LIT(0x4)) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x00000004000))) ||
                         ((spellInfo_2->SpellFamilyFlags & UI64LIT(0x4)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x00000004000))))
+                    return false;
+
+                // Wyvern Sting DoT & Immolation Trap Effect - using family flags
+                if (((spellInfo_1->SpellFamilyFlags & UI64LIT(0x10000)) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x4))) ||
+                        ((spellInfo_2->SpellFamilyFlags & UI64LIT(0x10000)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x4))))
                     return false;
 
                 // Bestial Wrath
@@ -2147,27 +2153,26 @@ void SpellMgr::LoadSpellScriptTarget()
                 }
                 break;
             }
+            case SPELL_TARGET_TYPE_PLAYER:
+            {
+                // nothing to check
+                break;
+            }
             default:
+            {
                 if (!targetEntry)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `spell_script_target`: target entry == 0 for not GO target type (%u).", type);
                     continue;
                 }
-                if (CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(targetEntry))
-                {
-                    if (spellId == 30427 && !cInfo->skinning_loot_id)
-                    {
-                        sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `spell_script_target` has creature %u as a target of spellid 30427, but this creature has no skinlootid. Gas extraction will not work!", cInfo->entry);
-                        continue;
-                    }
-                }
-                else
+                if (!sObjectMgr.GetCreatureTemplate(targetEntry))
                 {
                     if (!sObjectMgr.IsExistingCreatureId(targetEntry))
                         sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `spell_script_target`: creature template entry %u does not exist.", targetEntry);
                     continue;
                 }
                 break;
+            }
         }
 
         mSpellScriptTarget.insert(SpellScriptTarget::value_type(spellId, SpellTargetEntry(SpellTargetType(type), targetEntry, conditionId, effectMask)));
@@ -2600,13 +2605,13 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
 
             BattleGround* bg = player->GetBattleGround();
 
-            return player->GetMapId() == 30 && bg
+            return player->GetMapId() == MAP_ALTERAC_VALLEY && bg
                    && bg->GetStatus() != STATUS_WAIT_JOIN ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         }
         // Warsong Gulch
         case 23333:                                         // Warsong Flag
         case 23335:                                         // Silverwing Flag
-            return player && player->GetMapId() == 489 && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
+            return player && player->GetMapId() == MAP_WARSONG_GULCH && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         case 2584:                                          // Waiting to Resurrect
         {
             return player && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;
@@ -3127,7 +3132,7 @@ namespace SpellInternal
         }
         return true;
     }
-    
+
     bool IsHealSpell(SpellEntry const* spellInfo)
     {
         // Holy Light/Flash of Light
@@ -3315,7 +3320,7 @@ namespace SpellInternal
             isBinary = true;
         else if (spellInfo->Id == 26478)
             isBinary = true;           // SPELL_GROUND_RUPTURE_NATURE (C'thuns Giant tentacles ground rupture)
-    
+
         return isBinary;
     }
 
@@ -3621,7 +3626,7 @@ void SpellMgr::LoadSpells()
         sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded 0 spells. DB table `spell_template` is empty.");
         return;
     }
-    
+
     mSpellEntryMap.resize(maxEntry);
     BarGoLink bar(result->GetRowCount());
 
@@ -3785,6 +3790,7 @@ void SpellMgr::LoadSpells()
         //spell->MinReputation = fields[147].GetUInt32();
         //spell->RequiredAuraVision = fields[148].GetUInt32();
         spell->Custom = fields[149].GetUInt32();
+        spell->ScriptId = sScriptMgr.GetScriptId(fields[150].GetString());
 
         // It seems that in vanilla when the Amplitude of a
         // periodic aura was 0, it defaulted to a 5 seconds timer.
@@ -3817,7 +3823,7 @@ void SpellMgr::LoadSpells()
         // Attribute replaced with aura state in patch 1.8.
         if (spell->HasAttribute(SPELL_ATTR_EX2_ENABLE_AFTER_PARRY))
             spell->CasterAuraState = spell->SpellFamilyName == SPELLFAMILY_HUNTER ? AURA_STATE_HUNTER_PARRY : AURA_STATE_DEFENSE;
-        
+
 #if SUPPORTED_CLIENT_BUILD <= CLIENT_BUILD_1_10_2
         for (int i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; ++i)
         {
@@ -3831,7 +3837,7 @@ void SpellMgr::LoadSpells()
                         spell->EffectBasePoints[i] = -(100 - spell->EffectBasePoints[i]);
                         break;
                     }
-                    
+
 #if SUPPORTED_CLIENT_BUILD <= CLIENT_BUILD_1_8_4
                     // Before 1.9, the creature family is not a mask.
                     case SPELL_AURA_MOD_DAMAGE_DONE_CREATURE:

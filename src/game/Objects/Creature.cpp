@@ -192,8 +192,8 @@ bool CreatureCreatePos::Relocate(Creature* cr) const
 }
 
 Creature::Creature(CreatureSubtype subtype) :
-    Unit(), i_AI(nullptr),
-    loot(this), lootForPickPocketed(false), lootForBody(false), lootForSkin(false), skinningForOthersTimer(5000), m_TargetNotReachableTimer(0),
+    Unit(), m_AI(nullptr),
+    loot(this), lootForPickPocketed(false), lootForBody(false), lootForSkin(false), skinningForOthersTimer(5000), m_targetNotReachableTimer(0),
     m_pacifiedTimer(0), m_manaRegen(0),
     m_groupLootTimer(0), m_groupLootId(0), m_lootMoney(0), m_lootGroupRecipientId(0), m_corpseDecayTimer(0),
     m_respawnTime(0), m_respawnDelay(25), m_corpseDelay(60),
@@ -215,12 +215,12 @@ Creature::Creature(CreatureSubtype subtype) :
 
 Creature::~Creature()
 {
-    CleanupsBeforeDelete();
+    Unit::CleanupsBeforeDelete();
 
     m_vendorItemCounts.clear();
 
-    delete i_AI;
-    i_AI = nullptr;
+    delete m_AI;
+    m_AI = nullptr;
 }
 
 void Creature::AddToWorld()
@@ -244,7 +244,7 @@ void Creature::AddToWorld()
         
     Unit::AddToWorld();
 
-    if (!i_AI)
+    if (!m_AI)
         AIM_Initialize();
     if (!bWasInWorld && m_zoneScript)
         m_zoneScript->OnCreatureCreate(this);
@@ -767,8 +767,8 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                 {
                     SetDeathState(JUST_DIED);
                     SetHealth(0);
-                    i_motionMaster.Clear();
-                    ClearUnitState(UNIT_STAT_ALL_DYN_STATES);
+                    m_motionMaster.Clear();
+                    ClearUnitState(UNIT_STATE_ALL_DYN_STATES);
                     LoadCreatureAddon(true);
                 }
                 else
@@ -839,10 +839,10 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                         StopGroupLoot();
                 }
             }
-            if (i_AI)
+            if (m_AI)
             {
                 m_AI_locked = true;
-                i_AI->UpdateAI_corpse(diff);
+                m_AI->UpdateAI_corpse(diff);
                 m_AI_locked = false;
             }
 
@@ -903,7 +903,7 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                     }
 
                     // Prevent mobs from evading while under crowd control.
-                    if (HasUnitState(UNIT_STAT_NO_FREE_MOVE))
+                    if (HasUnitState(UNIT_STATE_NO_FREE_MOVE))
                         UpdateLeashExtensionTime();
 
                     // Leash prevents mobs from chasing any further than specified range
@@ -928,10 +928,10 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                     else
                         m_callForHelpTimer -= update_diff;
 
-                    unreachableTarget = !i_motionMaster.empty() &&
+                    unreachableTarget = !m_motionMaster.empty() &&
                                         !HasExtraFlag(CREATURE_FLAG_EXTRA_NO_UNREACHABLE_EVADE) &&
-                                        i_motionMaster.GetCurrent()->GetMovementGeneratorType() == CHASE_MOTION_TYPE &&
-                                        !i_motionMaster.GetCurrent()->IsReachable() &&
+                                        m_motionMaster.GetCurrent()->GetMovementGeneratorType() == CHASE_MOTION_TYPE &&
+                                        !m_motionMaster.GetCurrent()->IsReachable() &&
                                         !HasDistanceCasterMovement() && !GetCharmerOrOwnerGuid().IsPlayer() &&
                                         (!CanReachWithMeleeAutoAttack(GetVictim()) || !IsWithinLOSInMap(GetVictim())) &&
                                         !(GetVictim()->IsPlayer() && static_cast<Player*>(GetVictim())->GetCheatData()->IsInKnockBack());
@@ -940,12 +940,12 @@ void Creature::Update(uint32 update_diff, uint32 diff)
 
             if (unreachableTarget)
             {
-                m_TargetNotReachableTimer += update_diff;
-                if (GetMapId() == 30 && CanHaveThreatList() && m_TargetNotReachableTimer > 1000) // Alterac Valley exploit fix
+                m_targetNotReachableTimer += update_diff;
+                if (GetMapId() == MAP_ALTERAC_VALLEY && CanHaveThreatList() && m_targetNotReachableTimer > 1000) // Alterac Valley exploit fix
                     GetThreatManager().modifyThreatPercent(GetVictim(), -101);
             }
             else
-                m_TargetNotReachableTimer = 0;
+                m_targetNotReachableTimer = 0;
 
             if (AI())
             {
@@ -954,7 +954,7 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                 try
                 {
                     // Reset after 24 secs
-                    if (leash || (m_TargetNotReachableTimer > 24000))
+                    if (leash || (m_targetNotReachableTimer > 24000))
                         AI()->EnterEvadeMode();
                     else if (!IsEvadeBecauseTargetNotReachable())
                         AI()->UpdateAI(diff);   // AI not react good at real update delays (while freeze in non-active part of map)
@@ -1097,7 +1097,7 @@ bool Creature::DoFlee()
     */
 
     if (!GetVictim() || HasAuraType(SPELL_AURA_PREVENTS_FLEEING) ||
-        HasUnitState(UNIT_STAT_FEIGN_DEATH | UNIT_STAT_POSSESSED | UNIT_STAT_DISTRACTED | UNIT_STAT_CONFUSED))
+        HasUnitState(UNIT_STATE_FEIGN_DEATH | UNIT_STATE_POSSESSED | UNIT_STATE_DISTRACTED | UNIT_STATE_CONFUSED))
         return false;
 
     float hpPercent = GetHealthPercent();
@@ -1117,7 +1117,7 @@ bool Creature::DoFlee()
 bool Creature::DoFleeToGetAssistance()
 {
     if (!GetVictim() || HasAuraType(SPELL_AURA_PREVENTS_FLEEING) ||
-        HasUnitState(UNIT_STAT_FEIGN_DEATH | UNIT_STAT_POSSESSED | UNIT_STAT_DISTRACTED | UNIT_STAT_CONFUSED))
+        HasUnitState(UNIT_STATE_FEIGN_DEATH | UNIT_STATE_POSSESSED | UNIT_STATE_DISTRACTED | UNIT_STATE_CONFUSED))
         return false;
 
     float radius = sWorld.getConfig(CONFIG_FLOAT_CREATURE_FAMILY_FLEE_ASSISTANCE_RADIUS);
@@ -1203,7 +1203,7 @@ float Creature::GetBaseRunSpeedRate() const
 
 void Creature::MoveAwayFromTarget(Unit const* pTarget, float distance)
 {
-    if (HasUnitState(UNIT_STAT_NOT_MOVE | UNIT_STAT_CONFUSED | UNIT_STAT_LOST_CONTROL))
+    if (HasUnitState(UNIT_STATE_NOT_MOVE | UNIT_STATE_CONFUSED | UNIT_STATE_LOST_CONTROL))
         return;
 
     if (GetMotionMaster()->MoveDistance(pTarget, distance))
@@ -1223,10 +1223,10 @@ bool Creature::AIM_Initialize()
     // Clear flag. Escort AI will set it if this creature is escortable
     SetEscortable(false);
 
-    i_motionMaster.Initialize();
+    m_motionMaster.Initialize();
 
-    CreatureAI * oldAI = i_AI;
-    i_AI = FactorySelector::selectAI(this);
+    CreatureAI * oldAI = m_AI;
+    m_AI = FactorySelector::selectAI(this);
 
     delete oldAI;
     return true;
@@ -1995,29 +1995,34 @@ void Creature::LoadDefaultEquipment(GameEventCreatureData const* eventData)
     }
     else
     {
+        // use default from the template
+        LoadEquipment(m_creatureInfo->equipment_id, true);
+
+        // loot can override the default equipment
         if (HasStaticFlag(CREATURE_STATIC_FLAG_CAN_WIELD_LOOT))
         {
-            LoadEquipment(0, true);
             GenerateLootForBody(nullptr, nullptr);
             
-            bool usingLoot = false;
+            bool hasMainHand = false;
+            bool hasOffHand = false;
+            bool hasRanged = false;
             for (auto const& itr : loot.items)
             {
                 if (ItemPrototype const* pItem = sObjectMgr.GetItemPrototype(itr.itemid))
                 {
-                    if (!GetVirtualItemDisplayId(BASE_ATTACK))
+                    if (!hasMainHand)
                     {
                         if (pItem->InventoryType == INVTYPE_WEAPON ||
                             pItem->InventoryType == INVTYPE_WEAPONMAINHAND ||
                             pItem->InventoryType == INVTYPE_2HWEAPON && !GetVirtualItemDisplayId(OFF_ATTACK))
                         {
                             SetVirtualItem(BASE_ATTACK, itr.itemid);
-                            usingLoot = true;
+                            hasMainHand = true;
                             continue;
                         }
                     }
 
-                    if (!GetVirtualItemDisplayId(OFF_ATTACK) && GetVirtualItemInventoryType(BASE_ATTACK) != INVTYPE_2HWEAPON)
+                    if (!hasOffHand && GetVirtualItemInventoryType(BASE_ATTACK) != INVTYPE_2HWEAPON)
                     {
                         if (pItem->InventoryType == INVTYPE_WEAPON ||
                             pItem->InventoryType == INVTYPE_WEAPONOFFHAND ||
@@ -2025,26 +2030,20 @@ void Creature::LoadDefaultEquipment(GameEventCreatureData const* eventData)
                             pItem->InventoryType == INVTYPE_HOLDABLE)
                         {
                             SetVirtualItem(OFF_ATTACK, itr.itemid);
-                            usingLoot = true;
+                            hasOffHand = true;
                             continue;
                         }
                     }
 
-                    if (!GetVirtualItemDisplayId(RANGED_ATTACK) && pItem->IsRangedWeapon())
+                    if (!hasRanged && pItem->IsRangedWeapon())
                     {
                         SetVirtualItem(RANGED_ATTACK, itr.itemid);
-                        usingLoot = true;
+                        hasRanged = true;
                         continue;
                     }
                 }
             }
-
-            if (usingLoot)
-                return;
         }
-
-        // use default from the template
-        LoadEquipment(m_creatureInfo->equipment_id, true);
     }
 }
 
@@ -2215,7 +2214,7 @@ void Creature::SetDeathState(DeathState s)
 
     if (s == JUST_ALIVED)
     {
-        ClearUnitState(UNIT_STAT_ALL_DYN_STATES);
+        ClearUnitState(UNIT_STATE_ALL_DYN_STATES);
 
         CreatureInfo const* cinfo = GetCreatureInfo();
 
@@ -2242,7 +2241,7 @@ void Creature::SetDeathState(DeathState s)
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
 
         SetWalk(!HasExtraFlag(CREATURE_FLAG_EXTRA_ALWAYS_RUN), true);
-        i_motionMaster.Initialize();
+        m_motionMaster.Initialize();
     }
 }
 
@@ -2501,7 +2500,7 @@ bool Creature::CanBeTargetedByCallForHelp(Unit const* pFriend, Unit const* pEnem
     if (IsInCombat())
         return false;
 
-    if (HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED))
+    if (HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED))
         return false;
 
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING | UNIT_FLAG_NOT_SELECTABLE))
@@ -2583,7 +2582,7 @@ bool Creature::CanInitiateAttack() const
     if (!IsAlive())
         return false;
 
-    if (HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED | UNIT_STAT_FEIGN_DEATH))
+    if (HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED | UNIT_STATE_FEIGN_DEATH))
         return false;
 
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING | UNIT_FLAG_NOT_SELECTABLE))
@@ -3566,8 +3565,8 @@ void Creature::OnLeaveCombat()
     if (m_creatureGroup)
         m_creatureGroup->OnLeaveCombat(this);
 
-    if (i_AI)
-        i_AI->EnterEvadeMode();
+    if (m_AI)
+        m_AI->EnterEvadeMode();
 
     if (m_zoneScript)
         m_zoneScript->OnCreatureEvade(this);
@@ -3578,8 +3577,8 @@ void Creature::OnEnterCombat(Unit* pWho, bool notInCombat)
     if (!pWho)
         return;
 
-    if (i_AI && !HasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING))
-        i_AI->AttackedBy(pWho);
+    if (m_AI && !HasUnitState(UNIT_STATE_CONFUSED | UNIT_STATE_FLEEING))
+        m_AI->AttackedBy(pWho);
 
     if (m_creatureGroup)
         m_creatureGroup->OnMemberAttackStart(this, pWho);
@@ -3598,8 +3597,8 @@ void Creature::OnEnterCombat(Unit* pWho, bool notInCombat)
         if (IsMounted())
             Unmount();
 
-        if (i_AI)
-            i_AI->EnterCombat(pWho);
+        if (m_AI)
+            m_AI->EnterCombat(pWho);
 
         // Mark as At War with faction in client so player can attack back.
         if (GetReputationId() >= 0)
@@ -3941,14 +3940,14 @@ SpellCastResult Creature::TryToCast(Unit* pTarget, SpellEntry const* pSpellInfo,
         return SPELL_FAILED_TOO_CLOSE;
 
     // This spell should only be cast when we cannot get into melee range.
-    if ((uiCastFlags & CF_TARGET_UNREACHABLE) && (CanReachWithMeleeAutoAttack(pTarget) || (GetMotionMaster()->GetCurrentMovementGeneratorType() != CHASE_MOTION_TYPE) || !(HasUnitState(UNIT_STAT_ROOT) || !GetMotionMaster()->GetCurrent()->IsReachable())))
+    if ((uiCastFlags & CF_TARGET_UNREACHABLE) && (CanReachWithMeleeAutoAttack(pTarget) || (GetMotionMaster()->GetCurrentMovementGeneratorType() != CHASE_MOTION_TYPE) || !(HasUnitState(UNIT_STATE_ROOT) || !GetMotionMaster()->GetCurrent()->IsReachable())))
         return SPELL_FAILED_MOVING;
 
     // Custom checks
     if (!(uiCastFlags & CF_FORCE_CAST))
     {
         // Motion Master is not updated when this state is active.
-        if (!HasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+        if (!HasUnitState(UNIT_STATE_CAN_NOT_MOVE))
         {
             // Can't cast while fleeing.
             switch (GetMotionMaster()->GetCurrentMovementGeneratorType())
