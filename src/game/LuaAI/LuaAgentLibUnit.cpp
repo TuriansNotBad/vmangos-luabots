@@ -1306,13 +1306,13 @@ int LuaBindsAI::Unit_HasLostControl(lua_State* L)
 {
 	Unit* unit = Unit_GetUnitObject(L);
 	UnitState states = UnitState(
-		UnitState::UNIT_STAT_STUNNED |
-		UnitState::UNIT_STAT_POSSESSED |
-		UnitState::UNIT_STAT_TAXI_FLIGHT |
-		UnitState::UNIT_STAT_DISTRACTED |
-		UnitState::UNIT_STAT_CONFUSED |
-		UnitState::UNIT_STAT_FLEEING |
-		UnitState::UNIT_STAT_PENDING_STUNNED
+		UnitState::UNIT_STATE_STUNNED |
+		UnitState::UNIT_STATE_POSSESSED |
+		UnitState::UNIT_STATE_TAXI_FLIGHT |
+		UnitState::UNIT_STATE_DISTRACTED |
+		UnitState::UNIT_STATE_CONFUSED |
+		UnitState::UNIT_STATE_FLEEING |
+		UnitState::UNIT_STATE_PENDING_STUNNED
 	);
 	lua_pushboolean(L, unit->HasUnitState(states) || unit->IsCharmed() || !unit->GetPossessorGuid().IsEmpty());
 	return 1;
@@ -1330,7 +1330,7 @@ int LuaBindsAI::Unit_IsMoving(lua_State* L)
 int LuaBindsAI::Unit_IsWalking(lua_State* L)
 {
 	Unit* unit = Unit_GetUnitObject(L);
-	lua_pushboolean(L, !unit->HasUnitState(UnitState::UNIT_STAT_RUNNING) || unit->IsWalking());
+	lua_pushboolean(L, !unit->HasUnitState(UnitState::UNIT_STATE_RUNNING) || unit->IsWalking());
 	return 1;
 }
 

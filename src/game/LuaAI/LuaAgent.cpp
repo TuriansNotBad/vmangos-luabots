@@ -5,6 +5,7 @@
 #include "lua.hpp"
 #include "Bag.h"
 #include "Chat.h"
+#include "TradeData.h"
 
 const char* LuaAgent::AI_MTNAME = "Object.AI";
 

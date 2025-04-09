@@ -9,6 +9,7 @@
 #include "PointMovementGenerator.h"
 #include "Hierarchy/LuaAgentPartyInt.h"
 #include "Libs/CLine.h"
+#include "TradeData.h"
 
 
 namespace

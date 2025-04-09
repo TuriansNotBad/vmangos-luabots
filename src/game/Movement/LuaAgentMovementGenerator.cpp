@@ -363,7 +363,7 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
     if (!i_target.isValid() || !i_target->IsInWorld())
         return;
 
-    if (owner.HasUnitState(UNIT_STAT_NO_FREE_MOVE | UNIT_STAT_POSSESSED) || IsFalling(owner.ToPlayer()))
+    if (owner.HasUnitState(UNIT_STATE_NO_FREE_MOVE | UNIT_STATE_POSSESSED) || IsFalling(owner.ToPlayer()))
         return;
 
     float x, y, z;
@@ -489,7 +489,7 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
     PathFinder path(&owner);
     
     // allow pets following their master to cheat while generating paths
-    bool petFollowing = owner.HasUnitState(UNIT_STAT_FOLLOW);
+    bool petFollowing = owner.HasUnitState(UNIT_STATE_FOLLOW);
     Movement::MoveSplineInit init(owner, "TargetedMovementGenerator");
     path.SetTransport(transport);
     path.calculate(x, y, z, petFollowing);
@@ -527,7 +527,7 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
         }
     }
 
-    if (!m_bReachable && !!(pathType & PATHFIND_INCOMPLETE) && owner.HasUnitState(UNIT_STAT_ALLOW_INCOMPLETE_PATH))
+    if (!m_bReachable && !!(pathType & PATHFIND_INCOMPLETE) && owner.HasUnitState(UNIT_STATE_ALLOW_INCOMPLETE_PATH))
         m_bReachable = true;
 
     m_bRecalculateTravel = false;
@@ -539,8 +539,8 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
     if (pathLength < 0.4f ||
             (pathLength < 4.0f && (i_target->GetPositionZ() - owner.GetPositionZ()) > 10.0f) || // He is flying too high for me. Moving a few meters wont change anything.
             (pathType & PATHFIND_NOPATH && !petFollowing) ||
-            (pathType & PATHFIND_INCOMPLETE && !owner.HasUnitState(UNIT_STAT_ALLOW_INCOMPLETE_PATH) && !petFollowing) ||
-            (!petFollowing && !m_bReachable && !(owner.IsPlayer() && owner.HasUnitState(UNIT_STAT_FOLLOW))))
+            (pathType & PATHFIND_INCOMPLETE && !owner.HasUnitState(UNIT_STATE_ALLOW_INCOMPLETE_PATH) && !petFollowing) ||
+            (!petFollowing && !m_bReachable && !(owner.IsPlayer() && owner.HasUnitState(UNIT_STATE_FOLLOW))))
     {
         if (!losChecked)
             losResult = owner.IsWithinLOSInMap(i_target.getTarget());
@@ -634,7 +634,7 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::UpdateAsync(T &owner, uint32 /*
     if (!m_bRecalculateTravel)
         return;
     // All these cases will be handled at next sync update
-    if (!i_target.isValid() || !i_target->IsInWorld() || !owner.IsAlive() || owner.HasUnitState(UNIT_STAT_NO_FREE_MOVE | UNIT_STAT_POSSESSED)
+    if (!i_target.isValid() || !i_target->IsInWorld() || !owner.IsAlive() || owner.HasUnitState(UNIT_STATE_NO_FREE_MOVE | UNIT_STATE_POSSESSED)
             || static_cast<D*>(this)->_lostTarget(owner)
             || owner.IsNoMovementSpellCasted()
             || IsFalling(owner.ToPlayer()))
@@ -704,7 +704,7 @@ bool LuaAIChaseMovementGenerator<T>::Update(T &owner, uint32 const&  time_diff)
     if (owner.movespline->IsUninterruptible() && !owner.movespline->Finalized())
         return true;
 
-    if (owner.HasUnitState(UNIT_STAT_NO_FREE_MOVE | UNIT_STAT_POSSESSED) || IsFalling(owner.ToPlayer()))
+    if (owner.HasUnitState(UNIT_STATE_NO_FREE_MOVE | UNIT_STATE_POSSESSED) || IsFalling(owner.ToPlayer()))
     {
         _clearUnitStateMove(owner);
         return true;
@@ -817,7 +817,7 @@ void LuaAIChaseMovementGenerator<T>::_reachTarget(T &owner)
 template<>
 void LuaAIChaseMovementGenerator<Player>::Initialize(Player &owner)
 {
-    owner.AddUnitState(UNIT_STAT_CHASE | UNIT_STAT_CHASE_MOVE);
+    owner.AddUnitState(UNIT_STATE_CHASE | UNIT_STATE_CHASE_MOVE);
     owner.SetWalk(false, true);
     //m_bRecalculateTravel = true;
     //owner.GetMotionMaster()->SetNeedAsyncUpdate();
@@ -827,7 +827,7 @@ template<>
 void LuaAIChaseMovementGenerator<Creature>::Initialize(Creature &owner)
 {
     owner.SetWalk(false, false);
-    owner.AddUnitState(UNIT_STAT_CHASE | UNIT_STAT_CHASE_MOVE);
+    owner.AddUnitState(UNIT_STATE_CHASE | UNIT_STATE_CHASE_MOVE);
     m_bRecalculateTravel = true;
     owner.GetMotionMaster()->SetNeedAsyncUpdate();
 }
@@ -835,14 +835,14 @@ void LuaAIChaseMovementGenerator<Creature>::Initialize(Creature &owner)
 template<class T>
 void LuaAIChaseMovementGenerator<T>::Finalize(T &owner)
 {
-    owner.ClearUnitState(UNIT_STAT_CHASE | UNIT_STAT_CHASE_MOVE);
+    owner.ClearUnitState(UNIT_STATE_CHASE | UNIT_STATE_CHASE_MOVE);
     //MovementInform(owner);
 }
 
 template<class T>
 void LuaAIChaseMovementGenerator<T>::Interrupt(T &owner)
 {
-    owner.ClearUnitState(UNIT_STAT_CHASE | UNIT_STAT_CHASE_MOVE);
+    owner.ClearUnitState(UNIT_STATE_CHASE | UNIT_STATE_CHASE_MOVE);
 }
 
 template<class T>
@@ -895,7 +895,7 @@ bool LuaAIFollowMovementGenerator<T>::Update(T &owner, uint32 const&  time_diff)
     if (!owner.IsAlive())
         return true;
 
-    if (owner.HasUnitState(UNIT_STAT_NO_FREE_MOVE | UNIT_STAT_POSSESSED) || IsFalling(owner.ToPlayer()))
+    if (owner.HasUnitState(UNIT_STATE_NO_FREE_MOVE | UNIT_STATE_POSSESSED) || IsFalling(owner.ToPlayer()))
     {
         _clearUnitStateMove(owner);
         return true;
@@ -1029,7 +1029,7 @@ template<>
 void LuaAIFollowMovementGenerator<Player>::Initialize(Player &owner)
 {
     owner.SetWalk(false, true);
-    owner.AddUnitState(UNIT_STAT_FOLLOW | UNIT_STAT_FOLLOW_MOVE);
+    owner.AddUnitState(UNIT_STATE_FOLLOW | UNIT_STATE_FOLLOW_MOVE);
     _updateSpeed(owner);
     _setTargetLocation(owner);
 }
@@ -1037,7 +1037,7 @@ void LuaAIFollowMovementGenerator<Player>::Initialize(Player &owner)
 template<>
 void LuaAIFollowMovementGenerator<Creature>::Initialize(Creature &owner)
 {
-    owner.AddUnitState(UNIT_STAT_FOLLOW | UNIT_STAT_FOLLOW_MOVE);
+    owner.AddUnitState(UNIT_STATE_FOLLOW | UNIT_STATE_FOLLOW_MOVE);
     _updateSpeed(owner);
     _setTargetLocation(owner);
 }
@@ -1045,7 +1045,7 @@ void LuaAIFollowMovementGenerator<Creature>::Initialize(Creature &owner)
 template<class T>
 void LuaAIFollowMovementGenerator<T>::Finalize(T &owner)
 {
-    owner.ClearUnitState(UNIT_STAT_FOLLOW | UNIT_STAT_FOLLOW_MOVE);
+    owner.ClearUnitState(UNIT_STATE_FOLLOW | UNIT_STATE_FOLLOW_MOVE);
     _updateSpeed(owner);
     owner.StopMoving();
     //MovementInform(owner);
@@ -1054,7 +1054,7 @@ void LuaAIFollowMovementGenerator<T>::Finalize(T &owner)
 template<class T>
 void LuaAIFollowMovementGenerator<T>::Interrupt(T &owner)
 {
-    owner.ClearUnitState(UNIT_STAT_FOLLOW | UNIT_STAT_FOLLOW_MOVE);
+    owner.ClearUnitState(UNIT_STATE_FOLLOW | UNIT_STATE_FOLLOW_MOVE);
     _updateSpeed(owner);
 }
 

@@ -966,7 +966,7 @@ void MotionMaster::LuaAIMoveChase(Unit* target, float dist, float distMin, float
 
 void MotionMaster::LuaAIMoveFollow(Unit* target, float dist, float angle)
 {
-    if (m_owner->HasUnitState(UNIT_STAT_LOST_CONTROL))
+    if (m_owner->HasUnitState(UNIT_STATE_LOST_CONTROL))
         return;
 
     Clear();
