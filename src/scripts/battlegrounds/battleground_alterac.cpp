@@ -7,6 +7,7 @@ EndScriptData */
 
 #include "scriptPCH.h"
 #include "CreatureGroups.h"
+#include "Chat.h"
 
 /*
 Vanndar: Thunderclap (about 200-300 nature damage per player in range not been upgraded since vanilla, Time between attacks increased by 33%, movement speed reduced by 40%.) Storm Bolt (about 450 nature damage, stuns for 8 seconds, dispellable, used on non tanks) Avatar (50% increased damage and armor, up for 15 seconds, comes back up about 15-20 seconds later) Drek'thar: Whirlwind (2 second cast time, weapon damage to all in range) Frenzy (167% damage increase and attack speed increase by 50%, lasts 2 minutes, goes up after about 15-20 seconds from the start of fight) Knockdown (Infli
@@ -671,14 +672,8 @@ struct npc_BalindaAI : public ScriptedAI
                 ThreatList const& tList = m_creature->GetThreatManager().getThreatList();
                 for (const auto i : tList)
                 {
-                    if (ObjectGuid uiTargetGuid = i->getUnitGuid())
-                    {
-                        if (Unit* pTarget = m_creature->GetMap()->GetUnit(uiTargetGuid))
-                        {
-                            if (m_creature->IsWithinDistInMap(pTarget, 6.0f))
-                                uiTargetInRangeCount++;
-                        }
-                    }
+                    if (m_creature->IsWithinDistInMap(i->getTarget(), 6.0f))
+                        uiTargetInRangeCount++;
                 }
                 if (urand(0, 1000) > (1000 * (3 / (uiTargetInRangeCount + 1))))
                 {
@@ -919,14 +914,8 @@ struct npc_GalvangarAI : public ScriptedAI
                 ThreatList const& tList = m_creature->GetThreatManager().getThreatList();
                 for (const auto i : tList)
                 {
-                    if (ObjectGuid uiTargetGuid = i->getUnitGuid())
-                    {
-                        if (Unit* pTarget = m_creature->GetMap()->GetUnit(uiTargetGuid))
-                        {
-                            if (m_creature->IsWithinDistInMap(pTarget, 6.0f))
-                                uiTargetInRangeCount++;
-                        }
-                    }
+                    if (m_creature->IsWithinDistInMap(i->getTarget(), 6.0f))
+                        uiTargetInRangeCount++;
                 }
                 if (urand(0, 1000) > (1000 * (3 / (uiTargetInRangeCount + 1))))
                 {
@@ -4987,7 +4976,11 @@ struct AV_mineNpcAI : public ScriptedAI
         Map* m = m_creature->GetMap();
         if (!m->IsBattleGround())
             return 0;
+
         BattleGroundAV* bgAv = dynamic_cast<BattleGroundAV*>(((BattleGroundMap*)m)->GetBG());
+        if (!bgAv)
+            return 0;
+
         uint32 m_factionId;
         if (m_creature->GetFactionTemplateId() == 85)
             m_factionId = 1;

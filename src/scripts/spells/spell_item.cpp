@@ -453,6 +453,98 @@ SpellScript* GetScript_GoblinJumperCablesXL(SpellEntry const*)
     return new GoblinJumperCablesXLScript();
 }
 
+// 25860 - Reindeer Transformation (Fresh Holly, Preserved Holly)
+struct ReindeerTransformationScript : SpellScript
+{
+    SpellCastResult OnCheckCast(Spell* spell, bool /*strict*/) const final
+    {
+        if (!spell->m_casterUnit || !spell->m_casterUnit->HasAuraType(SPELL_AURA_MOUNTED))
+            return SPELL_FAILED_ONLY_MOUNTED;
+        return SPELL_CAST_OK;
+    }
+};
+
+SpellScript* GetScript_ReindeerTransformation(SpellEntry const*)
+{
+    return new ReindeerTransformationScript();
+}
+
+// 25720 - Place Loot (Bag of Gold), Quest 8606 Decoy!
+struct BagOfGoldScript : SpellScript
+{
+    SpellCastResult OnCheckCast(Spell* spell, bool /*strict*/) const final
+    {
+        if (Player* pPlayer = ToPlayer(spell->GetAffectiveCaster()))
+            if (!pPlayer->HasAura(25688)) // Narain's Turban
+                return SPELL_FAILED_TARGET_AURASTATE;
+        return SPELL_CAST_OK;
+    }
+};
+
+SpellScript* GetScript_BagOfGold(SpellEntry const*)
+{
+    return new BagOfGoldScript();
+}
+
+// 4067 - Big Bronze Bomb
+// 13237 - Goblin Mortar
+struct InstantCastScript : SpellScript
+{
+    void OnSuccessfulStart(Spell* spell) const final
+    {
+        spell->SetCastTime(0);
+        spell->ReSetTimer();
+    }
+};
+
+SpellScript* GetScript_InstantCast(SpellEntry const*)
+{
+    return new InstantCastScript();
+}
+
+// 5166 - Harvest Silithid Egg (Digging Claw), Quest 868 Egg Hunt
+struct DiggingClawScript : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const final
+    {
+        if (effIdx == EFFECT_INDEX_1 || effIdx == EFFECT_INDEX_2)
+        {
+            if (uint32 creatureId = spell->m_spellInfo->EffectMiscValue[effIdx])
+            {
+                if (spell->m_caster->FindNearestCreature(creatureId, 10.0f))
+                    return false;
+
+                return roll_chance_i(20);
+            }
+        }
+        return true;
+    }
+};
+
+SpellScript* GetScript_DiggingClaw(SpellEntry const*)
+{
+    return new DiggingClawScript();
+}
+
+// 11759 - Basilisk Sample (Untested Basilisk Sample)
+// 11760 - Hyena Sample (Untested Hyena Sample)
+// 11761 - Scorpid Sample (Untested Scorpid Sample)
+struct TanarisFieldSamplingScript : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const final
+    {
+        if (effIdx == EFFECT_INDEX_0)
+            return roll_chance_i(50);
+
+        return true;
+    }
+};
+
+SpellScript* GetScript_TanarisFieldSampling(SpellEntry const*)
+{
+    return new TanarisFieldSamplingScript();
+}
+
 void AddSC_item_spell_scripts()
 {
     Script* newscript;
@@ -540,5 +632,30 @@ void AddSC_item_spell_scripts()
     newscript = new Script;
     newscript->Name = "spell_goblin_jumper_cables_xl";
     newscript->GetSpellScript = &GetScript_GoblinJumperCablesXL;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_reindeer_transformation";
+    newscript->GetSpellScript = &GetScript_ReindeerTransformation;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_bag_of_gold";
+    newscript->GetSpellScript = &GetScript_BagOfGold;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_instant_cast";
+    newscript->GetSpellScript = &GetScript_InstantCast;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_digging_claw";
+    newscript->GetSpellScript = &GetScript_DiggingClaw;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_tanaris_field_sampling";
+    newscript->GetSpellScript = &GetScript_TanarisFieldSampling;
     newscript->RegisterSelf();
 }

@@ -402,7 +402,7 @@ struct mob_captured_felwood_oozeAI : public ScriptedAI
         if (type == FOLLOW_MOTION_TYPE && !mergeDone)
         {
             if (Creature* primalOoze = m_creature->FindNearestCreature(NPC_PRIMAL_OOZE, 5.0f))
-                if (DoCastSpellIfCan(primalOoze, SPELL_MERGING_OOZES))
+                if (DoCastSpellIfCan(primalOoze, SPELL_MERGING_OOZES) == CAST_OK)
                     mergeDone = true;
         }
     }
@@ -634,7 +634,7 @@ struct npc_simone_seductressAI : public ScriptedAI
                 
                 for (const auto itr : SimonetList)
                 {
-                    if (Unit* pUnit = m_creature->GetMap()->GetUnit(itr->getUnitGuid()))
+                    if (Unit* pUnit = itr->getTarget())
                     {
                         if (pUnit->IsAlive())
                         {
@@ -651,7 +651,7 @@ struct npc_simone_seductressAI : public ScriptedAI
                 
                     for (const auto itr : PrecioustList)
                     {
-                        if (Unit* pUnit = m_creature->GetMap()->GetUnit(itr->getUnitGuid()))
+                        if (Unit* pUnit = itr->getTarget())
                         {
                             if (pUnit->IsAlive())
                             {

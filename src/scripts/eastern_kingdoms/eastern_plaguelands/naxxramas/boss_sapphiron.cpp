@@ -351,7 +351,8 @@ struct boss_sapphironAI : public ScriptedAI
 
         std::vector<Unit*> suitableUnits;
         for (const auto itr : threatlist)
-            if (Unit* pTarget = m_creature->GetMap()->GetPlayer(itr->getUnitGuid()))
+        {
+            if (Player* pTarget = itr->getTarget()->ToPlayer())
             {
                 if (pTarget->IsDead())
                     continue;
@@ -361,7 +362,7 @@ struct boss_sapphironAI : public ScriptedAI
 
                 suitableUnits.push_back(pTarget);
             }
-
+        }
         if (suitableUnits.empty())
         {
             RescheduleIcebolt();
@@ -597,9 +598,9 @@ struct boss_sapphironAI : public ScriptedAI
                 {
                     if (Unit* pUnit = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, nullptr, SELECT_FLAG_PLAYER_NOT_GM))
                     {
-                        int angle = urand(0, 360);
-                        float x = pUnit->GetPositionX() + cos(angle * 0.01745f) * 5.0f;
-                        float y = pUnit->GetPositionY() + sin(angle * 0.01745f) * 5.0f;
+                        float const angle = frand(0.0f, M_PI_F * 2);
+                        float const x = pUnit->GetPositionX() + cos(angle) * 5.0f;
+                        float const y = pUnit->GetPositionY() + sin(angle) * 5.0f;
                         if (!m_creature->SummonCreature(NPC_BLIZZARD, x, y, 138.0f, 0, TEMPSUMMON_TIMED_DESPAWN, 30000))
                             events.Repeat(100);
                         else
@@ -713,10 +714,8 @@ struct npc_sapphiron_blizzardAI : public ScriptedAI
         ++it; // skip tank
         for (it; it != threatlist.end(); ++it)
         {
-            if (Unit* pTarget = m_pInstance->GetMap()->GetUnit((*it)->getUnitGuid()))
+            if (Player* pTarget = (*it)->getTarget()->ToPlayer())
             {
-                if (!pTarget->IsPlayer())
-                    continue;
                 if (std::find(previousTargets.begin(), previousTargets.end(), pTarget->GetObjectGuid()) != previousTargets.end())
                     continue;
                 // want to encourage the blizzard to move towards a semi-far-away target to make it spread out

@@ -54,7 +54,6 @@ set (game_SRCS
     AI/CreatureEventAI.cpp
     AI/CreatureEventAIMgr.cpp
     AI/CritterAI.cpp
-    AI/GenericSpellAI.cpp
     AI/GuardAI.cpp
     AI/GuardEventAI.cpp
     AI/NullCreatureAI.cpp
@@ -246,6 +245,7 @@ set (game_SRCS
     ObjectGuid.h
     ObjectMgr.h
     ObjectPosSelector.h
+    PacketProcessing.h
     PlayerDump.h
     QuestDef.h
     ReputationMgr.h
@@ -390,6 +390,7 @@ set (game_SRCS
     Objects/GameObject.h
     Objects/GameObjectDefines.h
     Objects/Item.h
+    Objects/ItemDefines.h
     Objects/ItemPrototype.h
     Objects/MirrorTimer.h
     Objects/MovementInfo.h

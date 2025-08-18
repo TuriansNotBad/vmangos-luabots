@@ -573,7 +573,7 @@ struct boss_twinemperorsAI : public ScriptedAI
         if (tList.empty())
             return nullptr;
 
-        std::list<Player*> candidates;
+        std::vector<Player*> candidates;
         ThreatList::const_iterator i = tList.begin();
 
         // skipping top-aggro if there are more than 1 person on threat list
@@ -582,7 +582,7 @@ struct boss_twinemperorsAI : public ScriptedAI
 
         for (i; i != tList.end(); ++i)
         {
-            Player* pPlayer = m_creature->GetMap()->GetPlayer((*i)->getUnitGuid());
+            Player* pPlayer = (*i)->getTarget()->ToPlayer();
             if (!pPlayer) continue;
 
             if (m_creature->IsInRange(pPlayer, min, max))
@@ -594,9 +594,7 @@ struct boss_twinemperorsAI : public ScriptedAI
         if (candidates.empty())
             return nullptr;
 
-        auto candIt = candidates.begin();
-        std::advance(candIt, urand(0, candidates.size() - 1));
-        return *candIt;
+        return SelectRandomContainerElement(candidates);
     }
 };
 
@@ -941,7 +939,7 @@ struct boss_veknilashAI : public boss_twinemperorsAI
 
         for (const auto i : tList)
         {
-            Unit* pUnit = m_creature->GetMap()->GetUnit(i->getUnitGuid());
+            Unit* pUnit = i->getTarget();
             if (!pUnit) continue;
 
             if (m_creature->CanReachWithMeleeAutoAttack(pUnit))
@@ -955,7 +953,7 @@ struct boss_veknilashAI : public boss_twinemperorsAI
 
         auto it = candidates.begin();
         std::advance(it, candidates.size() - 1);
-        return m_creature->GetMap()->GetUnit((*it)->getUnitGuid());
+        return (*it)->getTarget();
     }
     
     void UpdateEmperor(uint32 diff) override
