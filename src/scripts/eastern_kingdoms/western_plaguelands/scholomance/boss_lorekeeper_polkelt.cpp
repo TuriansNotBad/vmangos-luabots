@@ -24,7 +24,7 @@ EndScriptData */
 #include "scriptPCH.h"
 #include "scholomance.h"
 
-#define SPELL_VOLATILEINFECTION      24928
+#define SPELL_VOLATILEINFECTION      3584//24928
 #define SPELL_DARKPLAGUE_AURA        12038
 #define SPELL_CORROSIVEACID          8245
 #define SPELL_NOXIOUSCATALYST        18151
