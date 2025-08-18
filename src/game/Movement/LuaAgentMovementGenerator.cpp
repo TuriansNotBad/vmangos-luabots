@@ -35,6 +35,7 @@
 #include "ObjectPosSelector.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
+#include "Geometry.h"
 
 namespace
 {
@@ -82,7 +83,7 @@ namespace
             float angle = Geometry::GetAngle(i_objectX, i_objectY, u->GetPositionX(), u->GetPositionY()) - i_angle;
 
             // move angle to range -pi ... +pi
-            angle = MapManager::NormalizeOrientation(angle);
+            angle = Geometry::NormalizeOrientation(angle);
 
             // dist include size of u
             float dist2d = std::max(Geometry::GetDistance2D(i_objectX, i_objectY, x, y) - i_object.GetObjectBoundingRadius(), 0.0f);
@@ -654,7 +655,7 @@ bool LuaAIChaseMovementGenerator<T>::IsAngleBad(T& owner, bool mutualChase)
     if (mutualChase || !m_bUseAngle)
         return false;
 
-    float relAngle = MapManager::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
+    float relAngle = Geometry::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
     float angleDiff = std::abs(relAngle - m_fAngle);
     return std::min(angleDiff, M_PI_F * 2.f - angleDiff) > m_angleT;
 }
@@ -675,7 +676,7 @@ bool LuaAIChaseMovementGenerator<T>::IsDistBad(T& owner, bool mutualChase)
     if (dMin < 0.00001f)
         dMin = 0.00001f;
 
-    //float relAngle = MapManager::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
+    //float relAngle = Geometry::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
     //float angleDiff = std::abs(relAngle - m_fAngle);
     //angleDiff = std::min(angleDiff, (float) (M_PI) * 2 - angleDiff);
     //printf("Dist = %.3f dMax = %.3f dMin = %.3f dReq = %.3f Angle = %.3f adiff = %.3f aReq = %.3f aT = %.3f\n", distanceToTarget, dMax, dMin, combinedBoundingRadius, relAngle, angleDiff, m_fAngle, m_angleT);
@@ -954,7 +955,7 @@ bool LuaAIFollowMovementGenerator<T>::Update(T &owner, uint32 const&  time_diff)
 
             if (!targetMoved)
             {
-                float relAngle = MapManager::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
+                float relAngle = Geometry::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
                 float angleDiff = std::abs(relAngle - m_fAngle);
                 targetMoved = std::min(angleDiff, M_PI_F * 2 - angleDiff) > .1f;
             }
