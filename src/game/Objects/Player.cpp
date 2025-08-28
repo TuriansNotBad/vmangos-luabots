@@ -3786,10 +3786,10 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
 
 bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) const
 {
-    if (spellInfo->HasAttribute(SPELL_ATTR_EX_CAST_WHEN_LEARNED))
-        return true;
-
     ShapeshiftForm form = GetShapeshiftForm();
+
+    if (spellInfo->HasAttribute(SPELL_ATTR_EX_CAST_WHEN_LEARNED) && spellInfo->GetErrorAtShapeshiftedCast(form) == SPELL_CAST_OK)
+        return true;
 
     if (spellInfo->IsNeedCastSpellAtFormApply(form))        // SPELL_ATTR_PASSIVE | SPELL_ATTR_DO_NOT_DISPLAY spells
         return true;                                        // all stance req. cases, not have auarastate cases
@@ -3799,7 +3799,7 @@ bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) cons
 
     // note: form passives activated with shapeshift spells be implemented by HandleShapeshiftBoosts instead of spell_learn_spell
     // talent dependent passives activated at form apply have proper stance data
-    bool need_cast = (!spellInfo->Stances || (!form && (spellInfo->AttributesEx2 & SPELL_ATTR_EX2_ALLOW_WHILE_NOT_SHAPESHIFTED)));
+    bool need_cast = (!spellInfo->Stances || (!form && spellInfo->HasAttribute(SPELL_ATTR_EX2_ALLOW_WHILE_NOT_SHAPESHIFTED)));
 
     // Check CasterAuraStates
     return need_cast && (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState)));
@@ -16748,16 +16748,26 @@ void Player::_SaveInventory()
         itr.item->SetEnchantmentDuration(itr.slot, itr.leftduration);
 
     // if no changes
-    if (m_itemUpdateQueue.empty()) return;
+    if (m_itemUpdateQueue.empty())
+        return;
 
     for (auto& item : m_itemUpdateQueue)
     {
         if (!item)
+        {
+            sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "_SaveInventory - Null item pointer found in item update queue of %s.", GetGuidStr().c_str());
             continue;
+        }
+
+        if (item->IsDeleted())
+        {
+            sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "_SaveInventory - Already deleted item pointer found in item update queue of %s.", GetGuidStr().c_str());
+            continue;
+        }
 
         if (item->GetState() != ITEM_REMOVED)
         {
-            // Plusieurs tests anti dupli ...
+            // Several anti-duplicate tests ...
             Item* test = GetItemByPos(item->GetBagSlot(), item->GetSlot());
 
             if (test == nullptr)
@@ -16785,12 +16795,13 @@ void Player::_SaveInventory()
                 continue;
             }
         }
+
         if (item->GetOwnerGuid() != GetObjectGuid())
             GetSession()->ProcessAnticheatAction("PassiveAnticheat", "_SaveInventory: attempting to save not owned item", CHEAT_ACTION_LOG | CHEAT_ACTION_REPORT_GMS);
 
-        static SqlStatementID insertInventory ;
-        static SqlStatementID updateInventory ;
-        static SqlStatementID deleteInventory ;
+        static SqlStatementID insertInventory;
+        static SqlStatementID updateInventory;
+        static SqlStatementID deleteInventory;
 
         Bag* container = item->GetContainer();
         uint32 bagGuid = container ? container->GetGUIDLow() : 0;
@@ -16806,8 +16817,8 @@ void Player::_SaveInventory()
                 stmt.addUInt32(item->GetGUIDLow());
                 stmt.addUInt32(item->GetEntry());
                 stmt.Execute();
+                break;
             }
-            break;
             case ITEM_CHANGED:
             {
                 SqlStatement stmt = CharacterDatabase.CreateStatement(updateInventory, "UPDATE `character_inventory` SET `guid` = ?, `bag` = ?, `slot` = ?, `item_id` = ? WHERE `item_guid` = ?");
@@ -16817,14 +16828,14 @@ void Player::_SaveInventory()
                 stmt.addUInt32(item->GetEntry());
                 stmt.addUInt32(item->GetGUIDLow());
                 stmt.Execute();
+                break;
             }
-            break;
             case ITEM_REMOVED:
             {
                 SqlStatement stmt = CharacterDatabase.CreateStatement(deleteInventory, "DELETE FROM `character_inventory` WHERE `item_guid` = ?");
                 stmt.PExecute(item->GetGUIDLow());
+                break;
             }
-            break;
             case ITEM_UNCHANGED:
                 break;
         }
