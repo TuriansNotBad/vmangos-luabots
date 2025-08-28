@@ -35,7 +35,6 @@
 #include "ObjectPosSelector.h"
 #include "CellImpl.h"
 #include "GridNotifiers.h"
-#include "Geometry.h"
 
 namespace
 {
