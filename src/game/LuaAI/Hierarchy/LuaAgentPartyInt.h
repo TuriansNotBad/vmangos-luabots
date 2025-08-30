@@ -52,6 +52,8 @@ public:
 	void RemoveAll();
 	void Reset(lua_State* L, bool dropRefs);
 	void Init(lua_State* L);
+	void UpdateNormal(uint32 diff, lua_State* L);
+	void UpdateLogin(uint32 diff, lua_State* L);
 	void Update(uint32 diff, lua_State* L);
 
 	void CreateUD(lua_State* L);
@@ -91,10 +93,18 @@ private:
 	std::string m_name;
 	std::string m_init;
 	std::string m_update;
+	std::string m_onAgentsLoaded;
 
 	std::unordered_map<ObjectGuid, CCInfo> m_cc;
 
 	std::array<clock_t, PARTYINT_TIMER_COUNT_MAX> m_timers;
+
+	enum class EPartyState
+	{
+		PREINIT,
+		LOGIN,
+		NORMAL
+	} m_state;
 };
 
 

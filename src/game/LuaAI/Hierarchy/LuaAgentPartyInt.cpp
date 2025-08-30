@@ -52,10 +52,12 @@ PartyIntelligence::PartyIntelligence(std::string name, ObjectGuid owner) :
 	m_owner(owner),
 	m_updateInterval(50),
 	m_dungeon(nullptr),
-	m_timers{}
+	m_timers{},
+	m_state(EPartyState::PREINIT)
 {
 	m_init = m_name + "_Init";
 	m_update = m_name + "_Update";
+	m_onAgentsLoaded = m_name + "_OnAgentsLoaded";
 	m_updateTimer.Reset(m_updateInterval);
 	m_triggerMgr = std::make_unique<LuaAI::TriggerMgr>();
 }
@@ -73,13 +75,15 @@ void PartyIntelligence::Init(lua_State* L)
 	CreateUD(L);
 	lua_getglobal(L, m_init.c_str());
 	PushUD(L);
-	if (lua_dopcall(L, 1, 0) != LUA_OK)
+	PushUV(L);
+	if (lua_dopcall(L, 2, 0) != LUA_OK)
 	{
 		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Error party init: %s", lua_tostring(L, -1));
 		lua_pop(L, 1);
 		SetCeaseUpdates(true);
 		return;
 	}
+	m_state = EPartyState::LOGIN;
 }
 
 
@@ -126,11 +130,8 @@ void PartyIntelligence::LoadInfoFromLuaTbl(lua_State* L)
 }
 
 
-void PartyIntelligence::Update(uint32 diff, lua_State* L)
+void PartyIntelligence::UpdateLogin(uint32 diff, lua_State* L)
 {
-	if (m_userDataRef == LUA_NOREF || m_bCeaseUpdates)
-		return;
-
 	// process login
 	if (m_agents.size() != m_agentInfos.size())
 	{
@@ -143,7 +144,46 @@ void PartyIntelligence::Update(uint32 diff, lua_State* L)
 		LoadAgents();
 		return;
 	}
+	else
+	{
+		// once all agents report ready
+		for (auto& it : GetAgentMap())
+		{
+			LuaAgent* ai = it.second->GetLuaAI();
+			if (!ai)
+			{
+				sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "PartyIntelligence::UpdateLogin: no ai for agent %s", it.second->GetName());
+				SetCeaseUpdates(true);
+				return;
+			}
+			if (ai->GetCeaseUpdates())
+			{
+				sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "PartyIntelligence::UpdateLogin: error in agent initialization");
+				SetCeaseUpdates(true);
+				return;
+			}
+			if (!(ai->IsReady() && ai->IsInitialized() && ai->GetTopGoal()->GetActivated()))
+			{
+				return;
+			}
+		}
+		m_state = EPartyState::NORMAL;
+		lua_getglobal(L, m_onAgentsLoaded.c_str());
+		PushUD(L);
+		PushUV(L);
+		if (lua_dopcall(L, 2, 0) != LUA_OK)
+		{
+			sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Error party post login: %s", lua_tostring(L, -1));
+			lua_pop(L, 1);
+			SetCeaseUpdates(true);
+			return;
+		}
+	}
+}
 
+
+void PartyIntelligence::UpdateNormal(uint32 diff, lua_State* L)
+{
 	// dungeondata update
 	if (Player* owner = sObjectAccessor.FindPlayer(m_owner))
 	{
@@ -161,12 +201,34 @@ void PartyIntelligence::Update(uint32 diff, lua_State* L)
 
 	lua_getglobal(L, m_update.c_str());
 	PushUD(L);
-	if (lua_dopcall(L, 1, 0) != LUA_OK)
+	PushUV(L);
+	if (lua_dopcall(L, 2, 0) != LUA_OK)
 	{
 		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Error party update: %s", lua_tostring(L, -1));
 		lua_pop(L, 1);
 		SetCeaseUpdates(true);
 		return;
+	}
+}
+
+
+void PartyIntelligence::Update(uint32 diff, lua_State* L)
+{
+	if (m_userDataRef == LUA_NOREF || m_bCeaseUpdates)
+		return;
+
+	if (m_state == EPartyState::NORMAL)
+	{
+		UpdateNormal(diff, L);
+	}
+	else if (m_state == EPartyState::LOGIN)
+	{
+		UpdateLogin(diff, L);
+	}
+	else
+	{
+		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "PartyIntelligence updated in a bad state: %d", (int) m_state);
+		SetCeaseUpdates(true);
 	}
 }
 
