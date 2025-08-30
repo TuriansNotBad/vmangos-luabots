@@ -73,6 +73,7 @@ namespace LuaBindsAI {
 	int Unit_GetMapId(lua_State* L);
 	int Unit_GetZoneId(lua_State* L);
 	int Unit_IsInDungeon(lua_State* L);
+	int Unit_IsInWorld(lua_State* L);
 	int Unit_GetMapHeight(lua_State* L);
 	int Unit_GetAllowedZ(lua_State* L);
 	int Unit_HasInArc(lua_State* L);
@@ -90,6 +91,7 @@ namespace LuaBindsAI {
 	int Unit_GetPowerType(lua_State* L);
 
 	int Unit_Kill(lua_State* L);
+	int Unit_Respawn(lua_State* L);
 	int Unit_SetHealth(lua_State* L);
 	int Unit_SetMaxHealth(lua_State* L);
 	int Unit_SetHealthPct(lua_State* L);
@@ -208,6 +210,7 @@ namespace LuaBindsAI {
 		{"GetMapId", Unit_GetMapId},
 		{"GetZoneId", Unit_GetZoneId},
 		{"IsInDungeon", Unit_IsInDungeon},
+		{"IsInWorld", Unit_IsInWorld},
 		{"GetMapHeight", Unit_GetMapHeight},
 		{"GetAllowedZ", Unit_GetAllowedZ},
 		{"HasInArc", Unit_HasInArc},
@@ -225,6 +228,7 @@ namespace LuaBindsAI {
 		{"GetPowerType", Unit_GetPowerType},
 
 		{"Kill", Unit_Kill},
+		{"Respawn", Unit_Respawn},
 		{"SetHealth", Unit_SetHealth},
 		{"SetHealthPct", Unit_SetHealthPct},
 		{"SetMaxHealth", Unit_SetMaxHealth},

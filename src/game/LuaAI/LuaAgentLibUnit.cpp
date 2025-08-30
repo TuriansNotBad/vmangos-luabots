@@ -722,6 +722,14 @@ int LuaBindsAI::Unit_IsInDungeon(lua_State* L)
 }
 
 
+int LuaBindsAI::Unit_IsInWorld(lua_State* L)
+{
+	Unit* unit = Unit_GetUnitObject(L);
+	lua_pushboolean(L, unit->IsInWorld());
+	return 1;
+}
+
+
 int LuaBindsAI::Unit_GetHealth(lua_State* L)
 {
 	Unit* unit = Unit_GetUnitObject(L);
@@ -792,6 +800,17 @@ int LuaBindsAI::Unit_Kill(lua_State* L)
 	Unit* unit = Unit_GetUnitObject(L);
 	if (Creature* targetCreature = unit->ToCreature()) targetCreature->SetLootRecipient(nullptr);
 	unit->DealDamage(unit, unit->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+	return 0;
+}
+
+
+int LuaBindsAI::Unit_Respawn(lua_State* L)
+{
+	Unit* unit = Unit_GetUnitObject(L);
+	if (unit->GetTypeId() == TYPEID_UNIT && unit->IsDead())
+	{
+		if (Creature* c = unit->ToCreature()) c->Respawn();
+	}
 	return 0;
 }
 
