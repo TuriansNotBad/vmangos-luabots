@@ -54,7 +54,7 @@ namespace
 			: m_alive(aliveOnly), m_searcher(searcher), m_allowPlayers(allowPlayers), m_repLTE(repLTE), m_entry(entry), m_checkPath(bPath), m_zr(zr) {}
 		bool operator() (Unit* pUnit)
 		{
-			if (pUnit->IsAlive() != m_alive) return false;
+			if (m_alive && !pUnit->IsAlive()) return false;
 			if (pUnit->GetReactionTo(m_searcher) > m_repLTE) return false;
 			if (pUnit->IsPlayer() != m_allowPlayers) return false;
 			if (m_entry > 0 && pUnit->GetEntry() != m_entry) return false;
